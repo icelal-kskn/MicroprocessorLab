@@ -1,6 +1,5 @@
 ;200316059 Ikram Celal KESKIN
 ;200316011 Musa Sina ERTUGRUL
-
     LIST P=16F877A
     #include <p16f877a.inc>
     
@@ -31,17 +30,17 @@ START:
 
     ; ADC ayarlarý
     bsf STATUS, RP0        ; Bank 1 seçimi
-    movlw 0x01
-    movwf ADCON1           ; AN0 analog, diðerleri dijital
+    movlw 0x80             ; Configure all pins as digital I/O except AN0
+    movwf ADCON1
 
     bcf STATUS, RP0        ; Bank 0 seçimi
-    movlw 0xC1             ; FOSC/32, ADON
+    movlw 0x41             ; FOSC/8, ADON
     movwf ADCON0
 
     ; I/O port ayarlarý
     bsf STATUS, RP0        ; Bank 1 seçimi
-    movlw 0x00
-    movwf TRISA            ; PORTA tümü giriþ
+    movlw 0x01             ; Configure RA0 as input (AN0)
+    movwf TRISA
     movlw 0x00
     movwf TRISC            ; PORTC tümü çýkýþ
     movlw 0x00
@@ -55,6 +54,7 @@ START:
 MAIN_LOOP:
     ; ADC dönüþümünü baþlat
     bsf ADCON0, GO_DONE
+    call WAIT_ADC
     btfsc ADCON0, GO_DONE
     goto $-1
 
@@ -89,10 +89,12 @@ MAIN_LOOP:
 CONVERT_ADC_TO_TEMP:
     ; temp_val -> temp_c
     ; ADC deðeri * 0.488
-    movlw .2
-    mulwf temp_val, F
-    movf PRODH, W
+    ; Approximate by using a shift right to divide by 2 (0.5) and further adjustments
+    movf temp_val, W
     movwf temp_c
+    clrc
+    rrf temp_c, F   ; temp_c = temp_val / 2 (approx 0.5)
+    movf temp_c, W
     return
 
     ;----------------------
@@ -102,9 +104,9 @@ DIVIDE_TEMPERATURE:
     ; temp_c -> onlar basamaðý ve birler basamaðý
     movlw 10
     movwf temp_digit
-    divwf temp_c, F
-    movf temp_digit, W
-    movwf temp_digit
+    movf temp_c, W
+    call DIV10
+    movf temp_c, W
     return
 
     ;----------------------
@@ -125,6 +127,34 @@ DISPLAY_ONES:
     movlw 0x3F
     andwf temp_c, W
     movwf PORTD
+    return
+
+    ;----------------------
+    ; 10'a Bölme Alt Programý
+    ;----------------------
+DIV10:
+
+    movwf temp_digit
+    clrf temp_c
+DIV10_LOOP:
+    sublw 10
+    btfsc STATUS, C
+    goto DIV10_DONE
+    incf temp_c, F
+    goto DIV10_LOOP
+DIV10_DONE:
+    addlw 10
+    movf temp_c, W
+    return
+
+WAIT_ADC:
+    movlw 22
+    movwf temp_digit
+WAIT_ADC_LOOP:
+    nop
+    nop
+    decfsz temp_digit, F
+    goto WAIT_ADC_LOOP
     return
 
     END

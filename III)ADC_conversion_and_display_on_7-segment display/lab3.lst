@@ -1,4 +1,4 @@
-MPASM  5.46                          LAB2.ASM   5-23-2024  14:54:37         PAGE  1
+MPASM  5.46                          LAB3.ASM   5-22-2024  10:02:43         PAGE  1
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -6,11 +6,8 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 
                       00001 ;200316059 Ikram Celal KESKIN
                       00002 ;200316011 Musa Sina ERTUGRUL
-                      00003 
-                      00004 
-Warning[205]: Found directive in column 1. (LIST)
-                      00005 LIST P = PIC16F877A
-                      00006 #INCLUDE <P16F877A.INC>
+                      00003     LIST P=16F877A
+                      00004     #include <p16f877a.inc>
                       00001         LIST
                       00002 
                       00003 ;==========================================================================
@@ -20,171 +17,192 @@ Warning[205]: Found directive in column 1. (LIST)
                       00007 ;==========================================================================
                       00008 
                       00566         LIST
-                      00007 ;__CONFIG H'3F31'
-                      00008 
-                      00009 ;Var Def---------------------------------
-  00000025            00010 T0Counter       EQU     0X25
-  00000026            00011 Itr2            EQU     0X26
-  00000027            00012 Itr1            EQU     0X27
-  00000028            00013 Itr3            EQU     0X28
-                      00014 
-                      00015 ;First  Address--------------------------
-0000                  00016                 ORG             0x00
-0000   2854           00017                 GOTO            start
-                      00018 
-                      00019 ;Interrupt Address-----------------------
-0004                  00020                 ORG     0x04
-0004   1E8B           00021                 BTFSS   INTCON,TMR0IE
-0005   2853           00022                 GOTO    intRet
-0006   1D0B           00023                 BTFSS   INTCON,TMR0IF
-0007   2853           00024                 GOTO    intRet
-0008   3006           00025                 MOVLW   D'6'                    ;256-6 = 250 Step 
-0009   0081           00026                 MOVWF   TMR0
-000A   110B           00027                 BCF             INTCON,TMR0IF   ; INTCON Timer Flag Cleared
-Message[305]: Using default destination of 1 (file).
-000B   0AA5           00028                 INCF    T0Counter
-                      00029                 
-000C                  00030 intStart
-000C   30FA           00031                 MOVLW   D'250'                  ;250 x 4000 us = 1000 000 us 
-000D   0225           00032                 SUBWF   T0Counter,W
-000E   1C03           00033                 BTFSS   STATUS,C                ;T0Counter >= 250 ? IF then skip below instruction.
-000F   2853           00034                 GOTO    intRet                  ;Else Retrun from Interrupt
-0010   01A5           00035                 CLRF    T0Counter               ;IF T0 > 250 -> T0 = 0
-0011   1D08           00036                 BTFSS   PORTD,2
-0012   2816           00037                 GOTO    threeSec
-0013   1C88           00038                 BTFSS   PORTD,1
-0014   281D           00039                 GOTO    twoSec
-0015   2826           00040                 GOTO    oneSec
-0016                  00041 threeSec
-0016   3003           00042                 MOVLW   D'3'
-MPASM  5.46                          LAB2.ASM   5-23-2024  14:54:37         PAGE  2
+                      00005     
+2007   3F71           00006     __CONFIG _CP_OFF & _WDT_OFF & _XT_OSC & _PWRTE_ON & _BODEN_ON & _LVP_OFF
+                      00007 
+                      00008     ;----------------------
+                      00009     ; Deðiþken tanýmlarý
+                      00010     ;----------------------
+                      00011     cblock 0x20
+  00000020            00012         temp_val   ; ADC sonucu saklama
+  00000021            00013         temp_c     ; Sýcaklýk deðeri
+  00000022            00014         temp_digit ; 7-segment için basamak deðeri
+                      00015     endc
+                      00016 
+                      00017     ;----------------------
+                      00018     ; Baþlangýç ayarlarý
+                      00019     ;----------------------
+                      00020     ORG 0x00
+0000   2???           00021     GOTO START
+                      00022 
+                      00023     ORG 0x04
+0004   2???           00024     GOTO START
+                      00025 
+0005                  00026 START:
+                      00027     ; Osilatör frekansýný ayarla
+0005   1683           00028     bsf STATUS, RP0
+0006   1303           00029     bcf STATUS, RP1
+                      00030 
+                      00031     ; ADC ayarlarý
+0007   1683           00032     bsf STATUS, RP0        ; Bank 1 seçimi
+0008   3080           00033     movlw 0x80             ; Configure all pins as digital I/O except AN0
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0009   009F           00034     movwf ADCON1
+                      00035 
+000A   1283           00036     bcf STATUS, RP0        ; Bank 0 seçimi
+000B   3041           00037     movlw 0x41             ; FOSC/8, ADON
+000C   009F           00038     movwf ADCON0
+                      00039 
+                      00040     ; I/O port ayarlarý
+000D   1683           00041     bsf STATUS, RP0        ; Bank 1 seçimi
+000E   3001           00042     movlw 0x01             ; Configure RA0 as input (AN0)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+MPASM  5.46                          LAB3.ASM   5-22-2024  10:02:43         PAGE  2
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-Message[305]: Using default destination of 1 (file).
-0017   0AA6           00043                 INCF    Itr2
-0018   1003           00044                 BCF             STATUS,C
-0019   0226           00045                 SUBWF   Itr2,W
-001A   1C03           00046                 BTFSS   STATUS,C
-001B   2853           00047                 GOTO    intRet
-001C   282D           00048                 GOTO    checkOthers
-001D                  00049 twoSec
-001D   3002           00050                 MOVLW   D'2'
-Message[305]: Using default destination of 1 (file).
-001E   0AA6           00051                 INCF    Itr2
-001F   1003           00052                 BCF             STATUS,C
-0020   0226           00053                 SUBWF   Itr2,W
-0021   1C03           00054                 BTFSS   STATUS,C
-0022   2816           00055                 GOTO    threeSec
-0023   1C88           00056                 BTFSS   PORTD,1
-0024   2844           00057                 GOTO    setLedYellow
-0025   282D           00058                 GOTO    checkOthers
-0026                  00059 oneSec
-0026   3001           00060                 MOVLW   D'1'
-Message[305]: Using default destination of 1 (file).
-0027   0AA6           00061                 INCF    Itr2
-0028   1003           00062                 BCF             STATUS,C
-0029   0226           00063                 SUBWF   Itr2,W
-002A   1C03           00064                 BTFSS   STATUS,C
-002B   2816           00065                 GOTO    threeSec
-002C   283D           00066                 GOTO    setLedGreen
-002D                  00067 checkOthers
-002D   3001           00068                 MOVLW   D'1'
-002E   1003           00069                 BCF             STATUS,C
-002F   0228           00070                 SUBWF   Itr3,W
-0030   1C03           00071                 BTFSS   STATUS,C
-0031   283D           00072                 GOTO    setLedGreen
-0032   3002           00073                 MOVLW   D'2'
-0033   1003           00074                 BCF             STATUS,C
-0034   0228           00075                 SUBWF   Itr3,W
-0035   1C03           00076                 BTFSS   STATUS,C                ;If     1. LED = 1 -> cont. to turn out LED1 & 
-0036   2844           00077                 GOTO    setLedYellow
-0037   3003           00078                 MOVLW   D'3'
-0038   1003           00079                 BCF             STATUS,C
-0039   0228           00080                 SUBWF   Itr3,W
-003A   1C03           00081                 BTFSS   STATUS,C
-003B   284B           00082                 GOTO    setLedRed
-003C   2853           00083                 GOTO    intRet
-                      00084 
-                      00085                         ;
-003D                  00086 setLedGreen     
-003D   1108           00087                 BCF             PORTD,2 
-003E   1088           00088                 BCF             PORTD,1                 ;Swap LED Conditions...
-003F   1408           00089                 BSF             PORTD,0
-0040   01A6           00090                 CLRF    Itr2
-0041   01A7           00091                 CLRF    Itr1
-Message[305]: Using default destination of 1 (file).
-MPASM  5.46                          LAB2.ASM   5-23-2024  14:54:37         PAGE  3
+000F   0085           00043     movwf TRISA
+0010   3000           00044     movlw 0x00
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0011   0087           00045     movwf TRISC            ; PORTC tümü çýkýþ
+0012   3000           00046     movlw 0x00
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0013   0088           00047     movwf TRISD            ; PORTD tümü çýkýþ
+                      00048 
+0014   1283           00049     bcf STATUS, RP0        ; Bank 0 seçimi
+                      00050 
+                      00051     ;----------------------
+                      00052     ; Ana döngü
+                      00053     ;----------------------
+0015                  00054 MAIN_LOOP:
+                      00055     ; ADC dönüþümünü baþlat
+0015   151F           00056     bsf ADCON0, GO_DONE
+0016   2???           00057     call WAIT_ADC
+0017   191F           00058     btfsc ADCON0, GO_DONE
+0018   2???           00059     goto $-1
+                      00060 
+                      00061     ; ADC sonucu al
+0019   081E           00062     movf ADRESH, W
+001A   00A0           00063     movwf temp_val
+                      00064 
+                      00065     ; Sýcaklýk deðerini hesapla
+                      00066     ; 0-1023 -> 0-100 (yaklaþýk 0-100°C)
+                      00067     ; Referans voltajý 5V -> her bir birim 4.88mV -> her bir birim yaklaþýk 0.488°C
+                      00068     ; Sýcaklýk = ADC Deðeri * 0.488
+001B   0820           00069     movf temp_val, W
+001C   2???           00070     call CONVERT_ADC_TO_TEMP
+                      00071 
+                      00072     ; Sýcaklýk deðerini 7-segment göstergelere bölme
+001D   0821           00073     movf temp_c, W
+001E   2???           00074     call DIVIDE_TEMPERATURE
+                      00075 
+                      00076     ; Onlar basamaðý göster
+001F   0822           00077     movf temp_digit, W
+0020   2???           00078     call DISPLAY_TENS
+                      00079 
+                      00080     ; Birler basamaðý göster
+0021   0821           00081     movf temp_c, W
+0022   2???           00082     call DISPLAY_ONES
+                      00083 
+0023   2???           00084     goto MAIN_LOOP
+                      00085 
+                      00086     ;----------------------
+                      00087     ; ADC Deðerini Sýcaklýða Çevirme Alt Programý
+                      00088     ;----------------------
+0024                  00089 CONVERT_ADC_TO_TEMP:
+                      00090     ; temp_val -> temp_c
+                      00091     ; ADC deðeri * 0.488
+                      00092     ; Approximate by using a shift right to divide by 2 (0.5) and further adjustments
+0024   0820           00093     movf temp_val, W
+MPASM  5.46                          LAB3.ASM   5-22-2024  10:02:43         PAGE  3
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-0042   0AA8           00092                 INCF    Itr3
-0043   2853           00093                 GOTO    intRet
-0044                  00094 setLedYellow    
-0044   1008           00095                 BCF             PORTD,0                 ;Swap LED Conditions...
-0045   1488           00096                 BSF             PORTD,1
-0046   01A6           00097                 CLRF    Itr2
-0047   01A7           00098                 CLRF    Itr1
-0048   1D08           00099                 BTFSS   PORTD,2
-Message[305]: Using default destination of 1 (file).
-0049   0AA8           00100                 INCF    Itr3
-004A   2853           00101                 GOTO    intRet
-004B                  00102 setLedRed       
-004B   1008           00103                 BCF             PORTD,0
-004C   1088           00104                 BCF             PORTD,1                 ;Swap LED Conditions...
-004D   1508           00105                 BSF             PORTD,2
-004E   01A6           00106                 CLRF    Itr2
-004F   01A7           00107                 CLRF    Itr1
-0050   01A8           00108                 CLRF    Itr3
-0051   1003           00109                 BCF             STATUS,C
-0052   2853           00110                 GOTO    intRet
+0025   00A1           00094     movwf temp_c
+0026   1003           00095     clrc
+0027   0CA1           00096     rrf temp_c, F   ; temp_c = temp_val / 2 (approx 0.5)
+0028   0821           00097     movf temp_c, W
+0029   0008           00098     return
+                      00099 
+                      00100     ;----------------------
+                      00101     ; Sýcaklýðý Basamaklara Bölme Alt Programý
+                      00102     ;----------------------
+002A                  00103 DIVIDE_TEMPERATURE:
+                      00104     ; temp_c -> onlar basamaðý ve birler basamaðý
+002A   3010           00105     movlw 10
+002B   00A2           00106     movwf temp_digit
+002C   0821           00107     movf temp_c, W
+002D   2???           00108     call DIV10
+002E   0821           00109     movf temp_c, W
+002F   0008           00110     return
                       00111 
-0053                  00112 intRet  
-0053   0009           00113                 RETFIE
-                      00114 
-                      00115 ;Main Programm------------------------------------------------------
-0054   01A5           00116 start   CLRF    T0Counter
-0055   1683 1303      00117                 BANKSEL TRISD
-Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0057   0188           00118                 CLRF    TRISD
-0058   1683 1303      00119                 BANKSEL OPTION_REG
-005A   30D3           00120                 MOVLW   B'11010011'             ;OPT_REG 1:16  1 x 250 x 16 = 4000 us
-Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-005B   0081           00121                 MOVWF   OPTION_REG
-005C   1283 1303      00122                 BANKSEL PORTD
-005E   0188           00123                 CLRF    PORTD
-005F   3006           00124                 MOVLW   D'6'
-0060   0081           00125                 MOVWF   TMR0
-0061   168B           00126                 BSF             INTCON,TMR0IE
-0062   178B           00127                 BSF             INTCON,GIE
-0063   01A8           00128                 CLRF    Itr3
-0064   3001           00129                 MOVLW   D'1'
-0065   00A8           00130                 MOVWF   Itr3
-0066   01A6           00131                 CLRF    Itr2
-0067   3000           00132                 MOVLW   D'0'
-0068   00A6           00133                 MOVWF   Itr2
-0069   01A7           00134                 CLRF    Itr1
-006A   3000           00135                 MOVLW   D'0'
-006B   00A7           00136                 MOVWF   Itr1
-006C   1408           00137                 BSF             PORTD,0 
-006D   1088           00138                 BCF             PORTD,1
-006E   1108           00139                 BCF             PORTD,2
-                      00140 
-006F   286F           00141 loop    GOTO    loop
-MPASM  5.46                          LAB2.ASM   5-23-2024  14:54:37         PAGE  4
+                      00112     ;----------------------
+                      00113     ; Onlar Basamaðýný Gösterme Alt Programý
+                      00114     ;----------------------
+0030                  00115 DISPLAY_TENS:
+                      00116     ; temp_digit -> PORTC
+0030   303F           00117     movlw 0x3F
+0031   0522           00118     andwf temp_digit, W
+0032   0087           00119     movwf PORTC
+0033   0008           00120     return
+                      00121 
+                      00122     ;----------------------
+                      00123     ; Birler Basamaðýný Gösterme Alt Programý
+                      00124     ;----------------------
+0034                  00125 DISPLAY_ONES:
+                      00126     ; temp_c -> PORTD
+0034   303F           00127     movlw 0x3F
+0035   0521           00128     andwf temp_c, W
+0036   0088           00129     movwf PORTD
+0037   0008           00130     return
+                      00131 
+                      00132     ;----------------------
+                      00133     ; 10'a Bölme Alt Programý
+                      00134     ;----------------------
+0038                  00135 DIV10:
+                      00136     ; Divide W by 10, quotient in W, remainder in temp_digit
+                      00137     ; Using repeated subtraction
+0038   00A2           00138     movwf temp_digit
+0039   01A1           00139     clrf temp_c
+003A                  00140 DIV10_LOOP:
+003A   3C10           00141     sublw 10
+003B   1803           00142     btfsc STATUS, C
+003C   2???           00143     goto DIV10_DONE
+003D   0AA1           00144     incf temp_c, F
+003E   2???           00145     goto DIV10_LOOP
+003F                  00146 DIV10_DONE:
+MPASM  5.46                          LAB3.ASM   5-22-2024  10:02:43         PAGE  4
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-                      00142 
-Warning[205]: Found directive in column 1. (END)
-                      00143 END
-MPASM  5.46                          LAB2.ASM   5-23-2024  14:54:37         PAGE  5
+003F   3E10           00147     addlw 10
+0040   0821           00148     movf temp_c, W
+0041   0008           00149     return
+                      00150 
+                      00151     ;----------------------
+                      00152     ; ADC Dönüþümünü Bekleme Alt Programý
+                      00153     ;----------------------
+0042                  00154 WAIT_ADC:
+                      00155     ; Wait for ADC conversion time
+                      00156     ; Assume Fosc = 4MHz, Tad = 8*Tosc = 2us, Conversion time = 11*Tad = 22us
+                      00157     ; Implement a simple delay loop
+0042   3022           00158     movlw 22
+0043   00A2           00159     movwf temp_digit
+0044                  00160 WAIT_ADC_LOOP:
+0044   0000           00161     nop
+0045   0000           00162     nop
+0046   0BA2           00163     decfsz temp_digit, F
+0047   2???           00164     goto WAIT_ADC_LOOP
+0048   0008           00165     return
+                      00166 
+3F71                  00167     END
+MPASM  5.46                          LAB3.ASM   5-22-2024  10:02:43         PAGE  5
 
 
 SYMBOL TABLE
@@ -243,7 +261,7 @@ CHS1                              00000004
 CHS2                              00000005
 CIS                               00000003
 CKE                               00000006
-MPASM  5.46                          LAB2.ASM   5-23-2024  14:54:37         PAGE  6
+MPASM  5.46                          LAB3.ASM   5-22-2024  10:02:43         PAGE  6
 
 
 SYMBOL TABLE
@@ -256,6 +274,7 @@ CM2                               00000002
 CMCON                             0000009C
 CMIE                              00000006
 CMIF                              00000006
+CONVERT_ADC_TO_TEMP               00000024
 CREN                              00000004
 CSRC                              00000007
 CVR0                              00000000
@@ -269,6 +288,12 @@ CVRR                              00000005
 D                                 00000005
 DATA_ADDRESS                      00000005
 DC                                00000001
+DISPLAY_ONES                      00000034
+DISPLAY_TENS                      00000030
+DIV10                             00000038
+DIV10_DONE                        0000003F
+DIV10_LOOP                        0000003A
+DIVIDE_TEMPERATURE                0000002A
 D_A                               00000005
 D_NOT_A                           00000005
 EEADR                             0000010D
@@ -295,20 +320,18 @@ I2C_STOP                          00000004
 IBF                               00000007
 IBOV                              00000005
 INDF                              00000000
-INTCON                            0000000B
-INTE                              00000004
-INTEDG                            00000006
-INTF                              00000001
-IRP                               00000007
-Itr1                              00000027
-Itr2                              00000026
-MPASM  5.46                          LAB2.ASM   5-23-2024  14:54:37         PAGE  7
+MPASM  5.46                          LAB3.ASM   5-22-2024  10:02:43         PAGE  7
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
-Itr3                              00000028
+INTCON                            0000000B
+INTE                              00000004
+INTEDG                            00000006
+INTF                              00000001
+IRP                               00000007
+MAIN_LOOP                         00000015
 NOT_A                             00000005
 NOT_ADDRESS                       00000005
 NOT_BO                            00000000
@@ -356,17 +379,17 @@ PSPMODE                           00000004
 R                                 00000002
 RA0                               00000000
 RA1                               00000001
-RA2                               00000002
-RA3                               00000003
-RA4                               00000004
-RA5                               00000005
-RB0                               00000000
-MPASM  5.46                          LAB2.ASM   5-23-2024  14:54:37         PAGE  8
+MPASM  5.46                          LAB3.ASM   5-22-2024  10:02:43         PAGE  8
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RA5                               00000005
+RB0                               00000000
 RB1                               00000001
 RB2                               00000002
 RB3                               00000003
@@ -415,17 +438,17 @@ R_W                               00000002
 S                                 00000003
 SEN                               00000000
 SMP                               00000007
-SPBRG                             00000099
-SPEN                              00000007
-SREN                              00000005
-SSPADD                            00000093
-SSPBUF                            00000013
-MPASM  5.46                          LAB2.ASM   5-23-2024  14:54:37         PAGE  9
+MPASM  5.46                          LAB3.ASM   5-22-2024  10:02:43         PAGE  9
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+SPBRG                             00000099
+SPEN                              00000007
+SREN                              00000005
+SSPADD                            00000093
+SSPBUF                            00000013
 SSPCON                            00000014
 SSPCON2                           00000091
 SSPEN                             00000005
@@ -437,10 +460,10 @@ SSPM2                             00000002
 SSPM3                             00000003
 SSPOV                             00000006
 SSPSTAT                           00000094
+START                             00000005
 STATUS                            00000003
 SYNC                              00000004
 T0CS                              00000005
-T0Counter                         00000025
 T0IE                              00000005
 T0IF                              00000002
 T0SE                              00000004
@@ -474,17 +497,17 @@ TOUTPS3                           00000006
 TRISA                             00000085
 TRISA0                            00000000
 TRISA1                            00000001
-TRISA2                            00000002
-TRISA3                            00000003
-TRISA4                            00000004
-TRISA5                            00000005
-TRISB                             00000086
-MPASM  5.46                          LAB2.ASM   5-23-2024  14:54:37         PAGE 10
+MPASM  5.46                          LAB3.ASM   5-22-2024  10:02:43         PAGE 10
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISB                             00000086
 TRISB0                            00000000
 TRISB1                            00000001
 TRISB2                            00000002
@@ -527,23 +550,26 @@ TXREG                             00000019
 TXSTA                             00000098
 UA                                00000001
 W                                 00000000
+WAIT_ADC                          00000042
+WAIT_ADC_LOOP                     00000044
 WCOL                              00000007
 WR                                00000001
 WREN                              00000002
 WRERR                             00000003
+MPASM  5.46                          LAB3.ASM   5-22-2024  10:02:43         PAGE 11
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
 Z                                 00000002
+_.org_1_0018                      00000018
 _BODEN_OFF                        00003FBF
 _BODEN_ON                         00003FFF
 _BOREN_OFF                        00003FBF
 _BOREN_ON                         00003FFF
 _CONFIG                           00002007
 _CPD_OFF                          00003FFF
-MPASM  5.46                          LAB2.ASM   5-23-2024  14:54:37         PAGE 11
-
-
-SYMBOL TABLE
-  LABEL                             VALUE 
-
 _CPD_ON                           00003EFF
 _CP_ALL                           00001FFF
 _CP_OFF                           00003FFF
@@ -577,34 +603,12 @@ _WRT_OFF                          00003FFF
 _XT_OSC                           00003FFD
 __16F877A                         00000001
 __DEBUG                           1
-checkOthers                       0000002D
-intRet                            00000053
-intStart                          0000000C
-loop                              0000006F
-oneSec                            00000026
-setLedGreen                       0000003D
-setLedRed                         0000004B
-setLedYellow                      00000044
-start                             00000054
-threeSec                          00000016
-twoSec                            0000001D
-MPASM  5.46                          LAB2.ASM   5-23-2024  14:54:37         PAGE 12
-
-
-MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
-
-
-0000 : X---XXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
-0040 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX ----------------
-
-All other memory blocks unused.
-
-Program Memory Words Used:   109
-Program Memory Words Free:  8083
-
+temp_c                            00000021
+temp_digit                        00000022
+temp_val                          00000020
 
 Errors   :     0
-Warnings :     2 reported,     0 suppressed
-Messages :     8 reported,     0 suppressed
+Warnings :     0 reported,     0 suppressed
+Messages :     4 reported,     0 suppressed
 
 

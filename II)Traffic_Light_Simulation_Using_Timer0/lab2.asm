@@ -1,162 +1,143 @@
 ;200316059 Ikram Celal KESKIN
 ;200316011 Musa Sina ERTUGRUL
 
+
 LIST P = PIC16F877A
-#INCLUDE <P16F877A.INC>	
-__CONFIG H'3F31'
+#INCLUDE <P16F877A.INC>
+;__CONFIG H'3F31'
 
-#define RS PORTC,0 ; Lcd Data/Command
-#define RW PORTC,1 ; Read/Write Data
-#define EN PORTC,2 ; LCD Enable
+;Var Def---------------------------------
+T0Counter	EQU	0X25
+Itr2		EQU	0X26
+Itr1		EQU	0X27
+Itr3		EQU	0X28
 
-S1 		EQU 0X20	; Delay var
-S2 		EQU 0X21	; Delay var
-TEMP		EQU 0X22 	; For Working Reg Back-up
-CHAR    	EQU 0X23	; For Counter Display next char;
-CHAR2		EQU	0X24
 ;First 	Address--------------------------
-ORG 		0x00
-START
+		ORG 		0x00
+		GOTO 		start
 
-CALL REG_INIT			
-CALL LCD_INIT
+;Interrupt Address-----------------------
+		ORG 	0x04
+		BTFSS	INTCON,TMR0IE
+		GOTO	intRet
+		BTFSS	INTCON,TMR0IF
+		GOTO	intRet
+		MOVLW	D'6'			;256-6 = 250 Step 
+		MOVWF	TMR0
+		BCF		INTCON,TMR0IF	; INTCON Timer Flag Cleared
+		INCF	T0Counter
+		
+intStart
+		MOVLW	D'250'			;250 x 4000 us = 1000 000 us 
+		SUBWF	T0Counter,W
+		BTFSS	STATUS,C		;T0Counter >= 250 ? IF then skip below instruction.
+		GOTO	intRet			;Else Retrun from Interrupt
+		CLRF	T0Counter		;IF T0 > 250 -> T0 = 0
+		BTFSS	PORTD,2
+		GOTO	threeSec
+		BTFSS	PORTD,1
+		GOTO	twoSec
+		GOTO	oneSec
+threeSec
+		MOVLW 	D'3'
+		INCF	Itr2
+		BCF		STATUS,C
+		SUBWF	Itr2,W
+		BTFSS	STATUS,C
+		GOTO	intRet
+		GOTO	checkOthers
+twoSec
+		MOVLW	D'2'
+		INCF	Itr2
+		BCF		STATUS,C
+		SUBWF	Itr2,W
+		BTFSS	STATUS,C
+		GOTO	threeSec
+		BTFSS	PORTD,1
+		GOTO	setLedYellow
+		GOTO	checkOthers
+oneSec
+		MOVLW	D'1'
+		INCF	Itr2
+		BCF		STATUS,C
+		SUBWF	Itr2,W
+		BTFSS	STATUS,C
+		GOTO	threeSec
+		GOTO	setLedGreen
+checkOthers
+		MOVLW 	D'1'
+		BCF		STATUS,C
+		SUBWF	Itr3,W
+		BTFSS	STATUS,C
+		GOTO	setLedGreen
+		MOVLW 	D'2'
+		BCF		STATUS,C
+		SUBWF	Itr3,W
+		BTFSS	STATUS,C		;If	1. LED = 1 -> cont. to turn out LED1 & 
+		GOTO	setLedYellow
+		MOVLW 	D'3'
+		BCF		STATUS,C
+		SUBWF	Itr3,W
+		BTFSS	STATUS,C
+		GOTO	setLedRed
+		GOTO	intRet
 
-MOVLW	0x80
-CALL	LCD_COMMAND
-MOVLW	0X01
-CALL 	LCD_COMMAND
+			;
+setLedGreen	
+		BCF		PORTD,2	
+		BCF		PORTD,1			;Swap LED Conditions...
+		BSF		PORTD,0
+		CLRF	Itr2
+		CLRF	Itr1
+		INCF	Itr3
+		GOTO	intRet
+setLedYellow	
+		BCF		PORTD,0			;Swap LED Conditions...
+		BSF		PORTD,1
+		CLRF	Itr2
+		CLRF	Itr1
+		BTFSS	PORTD,2
+		INCF	Itr3
+		GOTO	intRet
+setLedRed	
+		BCF		PORTD,0
+		BCF		PORTD,1			;Swap LED Conditions...
+		BSF		PORTD,2
+		CLRF	Itr2
+		CLRF	Itr1
+		CLRF	Itr3
+		BCF		STATUS,C
+		GOTO	intRet
 
-POLL
-BTFSS	PORTB,0
-GOTO	POLL
-CALL	WRITE_COUNTER
-CALL 	PRINT
-MOVLW	0X02
-CALL 	LCD_COMMAND
-GOTO 	POLL
+intRet	
+		RETFIE
 
-WRITE_COUNTER
-MOVLW	"C"
-CALL	LCD_DATA
-CALL	SHIFT_RIGHT
-MOVLW	"o"
-CALL	LCD_DATA
-CALL	SHIFT_RIGHT
-MOVLW	"u"
-CALL	LCD_DATA
-CALL	SHIFT_RIGHT
-MOVLW	"n"
-CALL	LCD_DATA
-CALL	SHIFT_RIGHT
-MOVLW	"t"
-CALL	LCD_DATA
-CALL	SHIFT_RIGHT
-MOVLW	"e"
-CALL	LCD_DATA
-CALL	SHIFT_RIGHT
-MOVLW	"r"
-CALL	LCD_DATA
-CALL	SHIFT_RIGHT
-MOVLW	":"
-CALL	LCD_DATA
-CALL	SHIFT_RIGHT
-RETURN
+;Main Programm------------------------------------------------------
+start	CLRF	T0Counter
+		BANKSEL	TRISD
+		CLRF	TRISD
+		BANKSEL	OPTION_REG
+		MOVLW	B'11010011'		;OPT_REG 1:16  1 x 250 x 16 = 4000 us
+		MOVWF	OPTION_REG
+		BANKSEL	PORTD
+		CLRF	PORTD
+		MOVLW	D'6'
+		MOVWF	TMR0
+		BSF		INTCON,TMR0IE
+		BSF		INTCON,GIE
+		CLRF	Itr3
+		MOVLW	D'1'
+		MOVWF	Itr3
+		CLRF	Itr2
+		MOVLW	D'0'
+		MOVWF	Itr2
+		CLRF	Itr1
+		MOVLW	D'0'
+		MOVWF	Itr1
+		BSF		PORTD,0	
+		BCF		PORTD,1
+		BCF		PORTD,2
 
-SHIFT_LEFT
-MOVLW	0X04
-CALL 	LCD_COMMAND
-RETURN
-
-SHIFT_RIGHT
-MOVLW	0X06
-CALL 	LCD_COMMAND
-RETURN
-
-;TRIS REG Initialization for PORT A B C ----------------------------------------------
-REG_INIT
-BANKSEL TRISC
-MOVLW   B'00000001'
-MOVWF	TRISB
-CLRF	TRISC
-CLRF	TRISD
-BANKSEL PORTD
-CLRF	PORTD
-CLRF	PORTB
-CLRF 	CHAR
-RETURN
-;For Printing Char on LCD Display----------------------------------------------------
-PRINT
-BANKSEL CHAR
-BCF		STATUS,C
-MOVLW	D'10'
-SUBWF	CHAR2,W
-BTFSS	STATUS,C
-GOTO	PRINT2
-CLRF	CHAR2
-PRINT2
-MOVLW	"0"
-ADDWF 	CHAR,0
-CALL 	LCD_DATA
-CALL	SHIFT_RIGHT
-MOVLW	"0"
-ADDWF 	CHAR2,0
-CALL 	LCD_DATA
-CALL	SHIFT_RIGHT
-INCF	CHAR2
-BCF		STATUS,C
-MOVLW	D'10'
-SUBWF	CHAR2,W
-BTFSS	STATUS,C
-RETURN
-INCF	CHAR
-RETURN
-;For LCD Display Initialization-------------------------------------------------------
-LCD_INIT
-MOVLW	0X38			
-CALL 	LCD_COMMAND
-MOVLW 	0X06
-CALL	LCD_COMMAND
-MOVLW	0X0E
-CALL	LCD_COMMAND
-MOVLW	0X01
-CALL 	LCD_COMMAND
-RETURN
-;--------------------------------------------------------------------------------------
-LCD_COMMAND
-BCF		RS
-BCF		RW
-BSF		EN
-MOVWF 	TEMP
-CALL 	DELAY
-MOVFW	TEMP
-BANKSEL	PORTD
-MOVWF	PORTD
-BCF		EN
-RETURN
-;----------------------------------------------------------------------------------
-LCD_DATA
-BSF		RS
-BCF		RW
-BSF		EN
-MOVWF 		TEMP
-CALL 		DELAY
-MOVFW		TEMP
-BANKSEL		PORTD
-MOVWF		PORTD
-BCF		EN
-RETURN
-;------------FOR DELAY-----------
-DELAY
-MOVLW 0XFF
-MOVWF S1
-L1
-	MOVLW 0XFF
-	MOVWF S2
-	L2
-		DECFSZ S2
-		GOTO   L2
-	DECFSZ S1
-	GOTO   L1
-RETURN	
+loop	GOTO 	loop
 
 END

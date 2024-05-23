@@ -30,7 +30,7 @@ file_000=no
 [OTHER_FILES]
 file_000=no
 [FILE_INFO]
-file_000=C:\Users\Celal\Desktop\MicroprocessorLab\I)counter_on_RB0_interrupt_and_display_on_LCD\lab2.asm
+file_000=lab2.asm
 [SUITE_INFO]
 suite_guid={6B3DAA78-59C1-46DD-B6AA-DBDAE4E06484}
 suite_state=generate-absolute-code
