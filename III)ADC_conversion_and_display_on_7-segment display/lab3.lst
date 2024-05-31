@@ -1,4 +1,4 @@
-MPASM  5.46                          LAB3.ASM   5-25-2024  11:43:57         PAGE  1
+MPASM  5.46                          LAB3.ASM   5-31-2024  19:32:53         PAGE  1
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -6,8 +6,9 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 
                       00001 ;200316059 Ikram Celal KESKIN
                       00002 ;200316011 Musa Sina ERTUGRUL
-                      00003     LIST P = 16F877A
-                      00004     #INCLUDE <P16F877A.INC>
+Warning[205]: Found directive in column 1. (LIST)
+                      00003 LIST P=16F877A
+                      00004 #INCLUDE <P16F877A.INC>
                       00001         LIST
                       00002 
                       00003 ;==========================================================================
@@ -17,159 +18,134 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
                       00007 ;==========================================================================
                       00008 
                       00566         LIST
-2007   3F31           00005     __CONFIG H'3F31'
+Warning[205]: Found directive in column 1. (__CONFIG)
+2007   3F31           00005 __CONFIG H'3F31'
                       00006 
-  00000020            00007 DEG     EQU     0X20
-  00000021            00008 delay1  EQU     0x21
-  00000022            00009 delay2  EQU     0x22
-  00000023            00010 temp    EQU     0X23
-  00000024            00011 ones    EQU     0X24
-  00000025            00012 tens    EQU     0X25
-  00000026            00013 divisor EQU     0X26
+  00000020            00007 DEG      EQU 0x20
+  00000021            00008 decimal  EQU 0x21
+  00000022            00009 tens     EQU 0x22
+  00000023            00010 ones     EQU 0x23  
+                      00011 
+Warning[205]: Found directive in column 1. (ORG)
+                      00012 ORG      0x00
+Warning[203]: Found opcode in column 1. (GOTO)
+0000   2???           00013 GOTO     start
                       00014 
-                      00015         ORG     0X00
-0000   2???           00016         GOTO    start
-                      00017 
-0001                  00018 start   
-                      00019         ; Port ve ADC ayarlarý
-0001   30FF           00020         MOVLW   0XFF
-0002   1683 1303      00021         BANKSEL TRISA
+0001                  00015 start
+0001   30FF           00016     MOVLW   0xFF
+0002   1683 1303      00017     BANKSEL TRISA
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0004   0085           00022         MOVWF   TRISA
-0005   1683 1303      00023         BANKSEL TRISB
+0004   0085           00018     MOVWF   TRISA   ; Set all PORTA pins as input (ADC input)
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0007   0186           00024         CLRF    TRISB
-0008   1683 1303      00025         BANKSEL TRISC
+0005   0186           00019     CLRF    TRISB   ; Set all PORTB pins as output
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-000A   0187           00026         CLRF    TRISC
-000B   1683 1303      00027         BANKSEL TRISD   
+0006   0187           00020     CLRF    TRISC   ; Set all PORTC pins as output
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-000D   0188           00028         CLRF    TRISD
-000E   1283 1303      00029         BANKSEL PORTA
-0010   0185           00030         CLRF    PORTA
-0011   1283 1303      00031         BANKSEL PORTB
-0013   0186           00032         CLRF    PORTB
-0014   1283 1303      00033         BANKSEL PORTC
-0016   0187           00034         CLRF    PORTC
-0017   1283 1303      00035         BANKSEL PORTD
-0019   0188           00036         CLRF    PORTD
-001A   3041           00037         MOVLW   B'01000001' ;0X41       ADC Clock Fosc*1/8 ADON=1  
-001B   1283 1303      00038         BANKSEL ADCON0
-001D   009F           00039         MOVWF   ADCON0
-001E   1683 1303      00040         BANKSEL ADCON1
-MPASM  5.46                          LAB3.ASM   5-25-2024  11:43:57         PAGE  2
+0007   0188           00021     CLRF    TRISD   ; Set all PORTD pins as output
+0008   1283 1303      00022     BANKSEL PORTA
+000A   0186           00023     CLRF    PORTB   ; Clear PORTB
+000B   0187           00024     CLRF    PORTC   ; Clear PORTC
+000C   0188           00025     CLRF    PORTD   ; Clear PORTD
+000D   3041           00026     MOVLW   B'01000001'  ; Configure ADCON0: ADC Clock Fosc/8, ADON=1
+000E   009F           00027     MOVWF   ADCON0
+000F   1683 1303      00028     BANKSEL ADCON1
+0011   3080           00029     MOVLW   B'10000000'  ; Configure ADCON1: Right justified, VREF=VDD
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0012   009F           00030     MOVWF   ADCON1
+                      00031 
+0013                  00032 loop
+0013   2???           00033     CALL    ReadADC        
+0014   1283 1303      00034     BANKSEL PORTB
+0016   081E           00035     MOVFW   ADRESH
+MPASM  5.46                          LAB3.ASM   5-31-2024  19:32:53         PAGE  2
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-0020   3080           00041         MOVLW   B'10000000' ;0X80
-Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0021   009F           00042         MOVWF   ADCON1
-                      00043 
-0022                  00044 loop    
-0022   2???           00045         CALL    ReadADC     
-0023   1283 1303      00046         BANKSEL temp
-0025   081E           00047         MOVF    ADRESH,W
-0026   00A3           00048         MOVWF   temp       ;high byte of ADC result to temp
-0027   1283 1303      00049         BANKSEL DEG
-Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0029   081E           00050         MOVF    ADRESL,W
-002A   00A0           00051         MOVWF   DEG        ;low byte of ADC result to DEG
+0017   0086           00036     MOVWF   PORTB  ; Move ADC result to PORTB
+0018   2???           00037     CALL    Degree
+0019   2???           00038     GOTO    loop
+                      00039 
+                      00040 ;------------------------------------------------------
+                      00041 
+001A                  00042 ReadADC
+001A   1283 1303      00043     BANKSEL ADCON0
+001C   151F           00044     BSF     ADCON0, GO
+001D                  00045 read
+001D   191F           00046     BTFSC   ADCON0, GO  ; Wait for ADC conversion to complete
+001E   2???           00047     GOTO    read
+                      00048         
+001F   1283 1303      00049     BANKSEL ADRESH
+0021   081E           00050     MOVFW   ADRESH  ; Move high byte of ADC result to W
+Warning[203]: Found opcode in column 1. (RETURN)
+0022   0008           00051 RETURN
                       00052 
-                      00053         ; Combine ADRESH and ADRESL to get the full 10-bit result
-002B   1283 1303      00054         BANKSEL temp
-002D   0823           00055         MOVF    temp, W
-002E   00A5           00056         MOVWF   tens
-002F   300A           00057         MOVLW   D'10'
-0030   00A6           00058         MOVWF   divisor
-0031   01A4           00059         CLRF    ones
-0032                  00060 DIVIDE_LOOP:
-0032   0225           00061         SUBWF   tens, W
-0033   1C03           00062         BTFSS   STATUS, C
-0034   2???           00063         GOTO    DONE_DIVIDE
-0035   0AA4           00064         INCF    ones, F
-0036   2???           00065         GOTO    DIVIDE_LOOP
-0037                  00066 DONE_DIVIDE:
-0037   07A5           00067         ADDWF   tens, F        ; restore the original value
+                      00053 ;-----------------------------------------------------
+0023                  00054 Degree
+0023   081E           00055     MOVFW   ADRESH
+0024   00A0           00056     MOVWF   DEG
+0025   300A           00057     MOVLW   0x0A
+0026   2???           00058     CALL    TensOnesDeclare
+Warning[203]: Found opcode in column 1. (RETURN)
+0027   0008           00059 RETURN
+                      00060 
+                      00061 ;----------------------------------------------------
+0028                  00062 TensOnesDeclare
+0028   1283 1303      00063     BANKSEL DEG
+002A   0820           00064     MOVF    DEG, W
+002B   00A1           00065     MOVWF   decimal
+002C   01A2           00066     CLRF    tens
+002D   01A3           00067     CLRF    ones
                       00068 
-                      00069         ; Display tens digit
-0038   0824           00070         MOVF    ones, W
-0039   2???           00071         CALL    table
-003A   1283 1303      00072         BANKSEL PORTC
-003C   0087           00073         MOVWF   PORTC
-003D   1408           00074         BSF     PORTD, 0       ; Activate first 7 segment display
-003E   2???           00075         CALL    DELAY
-003F   1008           00076         BCF     PORTD, 0       ; Deactivate first 7 segment display
-                      00077 
-                      00078         ; Display ones digit
-0040   0825           00079         MOVF    tens, W
-0041   2???           00080         CALL    table
-0042   0087           00081         MOVWF   PORTC
-0043   1488           00082         BSF     PORTD, 1       ; Activate second 7 segment display
-0044   2???           00083         CALL    DELAY
-0045   1088           00084         BCF     PORTD, 1       ; Deactivate second 7 segment display
-                      00085 
-0046   2???           00086         GOTO    loop
-                      00087 
-                      00088 ;------------------------------------------------------
-                      00089 
-0047                  00090 ReadADC             
-0047   1283 1303      00091         BANKSEL ADCON0
-MPASM  5.46                          LAB3.ASM   5-25-2024  11:43:57         PAGE  3
+002E                  00069 countTens
+002E   3C10           00070     SUBLW   10
+002F   1C03           00071     BTFSS   STATUS, C  ; If result is negative, end loop
+0030   2???           00072     GOTO    doneTens
+0031   0AA2           00073     INCF    tens, F
+0032   00A1           00074     MOVWF   decimal
+0033   2???           00075     GOTO    countTens
+                      00076 
+0034                  00077 doneTens
+0034   0821           00078     MOVF    decimal, W
+0035   00A3           00079     MOVWF   ones
+                      00080 
+0036                  00081 showSevenSeg
+0036   0822           00082     MOVF    tens, W
+0037   2???           00083     CALL    table
+0038   1283 1303      00084     BANKSEL PORTC
+003A   0087           00085     MOVWF   PORTC  ; Display tens on PORTC
+003B   0823           00086     MOVF    ones, W
+MPASM  5.46                          LAB3.ASM   5-31-2024  19:32:53         PAGE  3
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-0049   151F           00092         BSF     ADCON0,GO
-004A                  00093 read    
-004A   1283 1303      00094         BANKSEL ADCON0
-004C   191F           00095         BTFSC   ADCON0,GO
-004D   2???           00096         GOTO    read
-                      00097         
-004E   1283 1303      00098         BANKSEL ADRESH
-0050   081E           00099         MOVF    ADRESH, W
-0051   00A3           00100         MOVWF   temp
-0052   1683 1303      00101         BANKSEL ADRESL
-Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0054   081E           00102         MOVF    ADRESL, W
-0055   00A0           00103         MOVWF   DEG
-0056   0008           00104         RETURN
-                      00105 ;-----------------------------------------------------
-0057                  00106 table   
+003C   2???           00087     CALL    table
+003D   1283 1303      00088     BANKSEL PORTD
+003F   0088           00089     MOVWF   PORTD  ; Display ones on PORTD
+Warning[203]: Found opcode in column 1. (RETURN)
+0040   0008           00090 RETURN
+                      00091 
+                      00092 ;---------------------------------------------------
+0041                  00093 table
 Message[305]: Using default destination of 1 (file).
-0057   0782           00107         ADDWF   PCL
-0058   34FC           00108         RETLW   B'11111100' ;0
-0059   3460           00109         RETLW   B'01100000' ;1
-005A   34DA           00110         RETLW   B'11011010' ;2
-005B   34F2           00111         RETLW   B'11110010' ;3
-005C   3466           00112         RETLW   B'01100110' ;4
-005D   34B6           00113         RETLW   B'10110110' ;5
-005E   34BE           00114         RETLW   B'10111110' ;6
-005F   34E0           00115         RETLW   B'11100000' ;7
-0060   34FE           00116         RETLW   B'11111110' ;8
-0061   34F6           00117         RETLW   B'11110110' ;9
-                      00118 
-                      00119 ;-------------------------------------------------
-0062                  00120 DELAY:
-                      00121     ; Basit bir gecikme rutini
-0062   30FA           00122     MOVLW D'250'
-0063                  00123 DELAY_LOOP1:
-0063   00A1           00124     MOVWF delay1
-0064                  00125 DELAY_LOOP2:
-0064   30FA           00126     MOVLW D'250'
-0065                  00127 DELAY_LOOP3:
-0065   00A2           00128     MOVWF delay2
-0066   0000           00129     NOP
-0067   0BA2           00130     DECFSZ delay2, F
-0068   2???           00131     GOTO DELAY_LOOP3
-0069   0BA1           00132     DECFSZ delay1, F
-006A   2???           00133     GOTO DELAY_LOOP2
-006B   0008           00134     RETURN
-                      00135 
-3F31                  00136     END
-MPASM  5.46                          LAB3.ASM   5-25-2024  11:43:57         PAGE  4
+0041   0782           00094     addwf   PCL
+0042   34FC           00095     retlw   B'11111100' 
+0043   3460           00096     retlw   B'01100000' 
+0044   34DA           00097     retlw   B'11011010' 
+0045   34F2           00098     retlw   B'11110010' 
+0046   3466           00099     retlw   B'01100110' 
+0047   34B6           00100     retlw   B'10110110' 
+0048   34BE           00101     retlw   B'10111110' 
+0049   34E0           00102     retlw   B'11100000' 
+004A   34FE           00103     retlw   B'11111110' 
+004B   34F6           00104     retlw   B'11110110' 
+                      00105 
+Warning[205]: Found directive in column 1. (END)
+3F31                  00106 END
+MPASM  5.46                          LAB3.ASM   5-31-2024  19:32:53         PAGE  4
 
 
 SYMBOL TABLE
@@ -228,7 +204,7 @@ CHS1                              00000004
 CHS2                              00000005
 CIS                               00000003
 CKE                               00000006
-MPASM  5.46                          LAB3.ASM   5-25-2024  11:43:57         PAGE  5
+MPASM  5.46                          LAB3.ASM   5-31-2024  19:32:53         PAGE  5
 
 
 SYMBOL TABLE
@@ -255,14 +231,9 @@ D                                 00000005
 DATA_ADDRESS                      00000005
 DC                                00000001
 DEG                               00000020
-DELAY                             00000062
-DELAY_LOOP1                       00000063
-DELAY_LOOP2                       00000064
-DELAY_LOOP3                       00000065
-DIVIDE_LOOP                       00000032
-DONE_DIVIDE                       00000037
 D_A                               00000005
 D_NOT_A                           00000005
+Degree                            00000023
 EEADR                             0000010D
 EEADRH                            0000010F
 EECON1                            0000018C
@@ -287,17 +258,17 @@ I2C_STOP                          00000004
 IBF                               00000007
 IBOV                              00000005
 INDF                              00000000
-MPASM  5.46                          LAB3.ASM   5-25-2024  11:43:57         PAGE  6
-
-
-SYMBOL TABLE
-  LABEL                             VALUE 
-
 INTCON                            0000000B
 INTE                              00000004
 INTEDG                            00000006
 INTF                              00000001
 IRP                               00000007
+MPASM  5.46                          LAB3.ASM   5-31-2024  19:32:53         PAGE  6
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
 NOT_A                             00000005
 NOT_ADDRESS                       00000005
 NOT_BO                            00000000
@@ -346,17 +317,17 @@ R                                 00000002
 RA0                               00000000
 RA1                               00000001
 RA2                               00000002
-MPASM  5.46                          LAB3.ASM   5-25-2024  11:43:57         PAGE  7
-
-
-SYMBOL TABLE
-  LABEL                             VALUE 
-
 RA3                               00000003
 RA4                               00000004
 RA5                               00000005
 RB0                               00000000
 RB1                               00000001
+MPASM  5.46                          LAB3.ASM   5-31-2024  19:32:53         PAGE  7
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
 RB2                               00000002
 RB3                               00000003
 RB4                               00000004
@@ -401,21 +372,21 @@ RX9                               00000006
 RX9D                              00000000
 R_NOT_W                           00000002
 R_W                               00000002
-ReadADC                           00000047
+ReadADC                           0000001A
 S                                 00000003
 SEN                               00000000
 SMP                               00000007
-MPASM  5.46                          LAB3.ASM   5-25-2024  11:43:57         PAGE  8
-
-
-SYMBOL TABLE
-  LABEL                             VALUE 
-
 SPBRG                             00000099
 SPEN                              00000007
 SREN                              00000005
 SSPADD                            00000093
 SSPBUF                            00000013
+MPASM  5.46                          LAB3.ASM   5-31-2024  19:32:53         PAGE  8
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
 SSPCON                            00000014
 SSPCON2                           00000091
 SSPEN                             00000005
@@ -464,17 +435,17 @@ TRISA                             00000085
 TRISA0                            00000000
 TRISA1                            00000001
 TRISA2                            00000002
-MPASM  5.46                          LAB3.ASM   5-25-2024  11:43:57         PAGE  9
-
-
-SYMBOL TABLE
-  LABEL                             VALUE 
-
 TRISA3                            00000003
 TRISA4                            00000004
 TRISA5                            00000005
 TRISB                             00000086
 TRISB0                            00000000
+MPASM  5.46                          LAB3.ASM   5-31-2024  19:32:53         PAGE  9
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
 TRISB1                            00000001
 TRISB2                            00000002
 TRISB3                            00000003
@@ -514,6 +485,7 @@ TXIE                              00000004
 TXIF                              00000004
 TXREG                             00000019
 TXSTA                             00000098
+TensOnesDeclare                   00000028
 UA                                00000001
 W                                 00000000
 WCOL                              00000007
@@ -523,16 +495,16 @@ WRERR                             00000003
 Z                                 00000002
 _BODEN_OFF                        00003FBF
 _BODEN_ON                         00003FFF
-MPASM  5.46                          LAB3.ASM   5-25-2024  11:43:57         PAGE 10
+_BOREN_OFF                        00003FBF
+_BOREN_ON                         00003FFF
+_CONFIG                           00002007
+_CPD_OFF                          00003FFF
+MPASM  5.46                          LAB3.ASM   5-31-2024  19:32:53         PAGE 10
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
-_BOREN_OFF                        00003FBF
-_BOREN_ON                         00003FFF
-_CONFIG                           00002007
-_CPD_OFF                          00003FFF
 _CPD_ON                           00003EFF
 _CP_ALL                           00001FFF
 _CP_OFF                           00003FFF
@@ -566,19 +538,19 @@ _WRT_OFF                          00003FFF
 _XT_OSC                           00003FFD
 __16F877A                         00000001
 __DEBUG                           1
-delay1                            00000021
-delay2                            00000022
-divisor                           00000026
-loop                              00000022
-ones                              00000024
-read                              0000004A
+countTens                         0000002E
+decimal                           00000021
+doneTens                          00000034
+loop                              00000013
+ones                              00000023
+read                              0000001D
+showSevenSeg                      00000036
 start                             00000001
-table                             00000057
-temp                              00000023
-tens                              00000025
+table                             00000041
+tens                              00000022
 
 Errors   :     0
-Warnings :     0 reported,     0 suppressed
-Messages :     8 reported,     0 suppressed
+Warnings :     8 reported,     0 suppressed
+Messages :     6 reported,     0 suppressed
 
 
